@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="auto">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>小账本 · 每日花销</title>
+<meta name="description" content="离线记账本：记支出和收入，看月度统计，数据只保存在本机。" />
+<meta name="theme-color" content="#0f9d76" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="assets/favicon.png" sizes="64x64" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">¥</span>
+      <div class="brand-text">
+        <h1 id="viewTitle">小账本</h1>
+        <p class="sub" id="viewSub"></p>
+      </div>
+    </div>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换深色模式">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path id="themeIcon" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+      </svg>
+    </button>
+  </header>
+
+  <main id="main">
+
+    <!-- 首页 -->
+    <section class="view" id="view-home" aria-label="首页">
+      <div class="card hero">
+        <div class="hero-label">本月支出</div>
+        <div class="hero-amount"><span class="cny">¥</span><span id="homeExpense">0.00</span></div>
+        <div class="hero-meta">
+          <span>收入 <b id="homeIncome">¥0.00</b></span>
+          <span>结余 <b id="homeBalance">¥0.00</b></span>
+        </div>
+        <div class="budget" id="budgetBox" hidden>
+          <div class="budget-top"><span>本月预算</span><span id="budgetText"></span></div>
+          <div class="progress"><i id="budgetBar"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="card mini">
+          <span class="mini-label">今日支出</span>
+          <b id="todayExpense">¥0.00</b>
+          <span class="mini-sub" id="todayCount">0 笔</span>
+        </div>
+        <div class="card mini">
+          <span class="mini-label">本月记录</span>
+          <b id="monthCount">0</b>
+          <span class="mini-sub" id="monthDays">0 天有记账</span>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <h2>最近记录</h2>
+        <button class="link" type="button" data-go="list">全部明细 ›</button>
+      </div>
+      <ul class="record-list" id="recentList"></ul>
+    </section>
+
+    <!-- 明细 -->
+    <section class="view" id="view-list" aria-label="明细">
+      <div class="card filter-card">
+        <div class="month-nav">
+          <button class="icon-btn sm" type="button" id="listPrev" aria-label="上个月">‹</button>
+          <b id="listMonth">—</b>
+          <button class="icon-btn sm" type="button" id="listNext" aria-label="下个月">›</button>
+        </div>
+        <div class="chips" id="listChips">
+          <button class="chip on" type="button" data-filter="all">全部</button>
+          <button class="chip" type="button" data-filter="expense">支出</button>
+          <button class="chip" type="button" data-filter="income">收入</button>
+        </div>
+        <input class="search" id="searchInput" type="search" placeholder="搜索备注或分类" autocomplete="off" />
+      </div>
+
+      <p class="list-summary" id="listSummary"></p>
+      <div id="listBody"></div>
+    </section>
+
+    <!-- 统计 -->
+    <section class="view" id="view-stats" aria-label="统计">
+      <div class="card">
+        <div class="month-nav">
+          <button class="icon-btn sm" type="button" id="statPrev" aria-label="上个月">‹</button>
+          <b id="statMonth">—</b>
+          <button class="icon-btn sm" type="button" id="statNext" aria-label="下个月">›</button>
+        </div>
+        <div class="chips" id="statChips">
+          <button class="chip on" type="button" data-stype="expense">支出</button>
+          <button class="chip" type="button" data-stype="income">收入</button>
+        </div>
+        <div class="stat-total"><span id="statTotalLabel">合计支出</span><b id="statTotal">¥0.00</b></div>
+        <div class="stat-sub" id="statSub">日均 ¥0.00 · 共 0 笔</div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">每日走势</h2>
+        <div class="bar-chart" id="barChart"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">分类占比</h2>
+        <div class="donut-wrap">
+          <svg id="donut" viewBox="0 0 120 120" role="img" aria-label="分类占比图"></svg>
+          <div class="donut-center"><b id="donutTotal">¥0</b><span>合计</span></div>
+        </div>
+        <ol class="cat-rank" id="catRank"></ol>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="view" id="view-settings" aria-label="设置">
+      <div class="card">
+        <h2 class="card-title">每月预算</h2>
+        <p class="hint">用来控制花销，填 0 表示不设置预算。</p>
+        <div class="inline-field">
+          <span>¥</span>
+          <input id="budgetInput" type="number" min="0" step="50" inputmode="decimal" placeholder="例如 3000" />
+          <button class="btn small" type="button" id="saveBudget">保存</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">外观</h2>
+        <label class="field">主题
+          <select id="themeSelect">
+            <option value="auto">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">数据</h2>
+        <p class="hint" id="dataHint">—</p>
+        <div class="btn-row">
+          <button class="btn" type="button" id="exportJson">导出备份</button>
+          <button class="btn" type="button" id="exportCsv">导出 CSV</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" type="button" id="importBtn">导入备份</button>
+          <button class="btn danger" type="button" id="clearBtn">清空数据</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">关于</h2>
+        <p class="hint">小账本 v1.0。所有记录只保存在这台设备的浏览器里，不会上传到任何服务器；换设备或清理浏览器前，记得先「导出备份」。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar" aria-label="主导航">
+    <button type="button" class="tab on" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4.5v-5.5h-5V21H5a1 1 0 0 1-1-1z"/></svg>
+      <span>首页</span>
+    </button>
+    <button type="button" class="tab" data-tab="list">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
+      <span>明细</span>
+    </button>
+    <button type="button" class="tab" data-tab="stats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>
+      <span>统计</span>
+    </button>
+    <button type="button" class="tab" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.6a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.6 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/></svg>
+      <span>设置</span>
+    </button>
+  </nav>
+
+  <button class="fab" id="addBtn" type="button" aria-label="记一笔">+</button>
+</div>
+
+<!-- 记账面板 -->
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head">
+      <h2 id="sheetTitle">记一笔</h2>
+      <div class="sheet-actions">
+        <button class="link danger-link" id="deleteBtn" type="button" hidden>删除</button>
+        <button class="icon-btn" id="sheetClose" type="button" aria-label="关闭">✕</button>
+      </div>
+    </div>
+
+    <div class="seg" id="typeSeg" role="tablist">
+      <button type="button" class="on" data-type="expense">支出</button>
+      <button type="button" data-type="income">收入</button>
+    </div>
+
+    <div class="amount-display" id="amountDisplay">
+      <span class="cny">¥</span><span id="amountText">0</span>
+    </div>
+
+    <div class="cats" id="catsGrid"></div>
+
+    <div class="row2">
+      <label class="field">日期<input type="date" id="dateInput" /></label>
+      <label class="field grow">备注<input type="text" id="noteInput" maxlength="30" placeholder="可选，如：午饭" /></label>
+    </div>
+
+    <div class="keypad" id="keypad">
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key=".">.</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-key="back" class="key-back" aria-label="退格">⌫</button>
+    </div>
+
+    <button class="btn primary block" type="button" id="saveBtn">保存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
